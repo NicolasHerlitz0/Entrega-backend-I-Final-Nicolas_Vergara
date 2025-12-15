@@ -2,34 +2,40 @@ import express from 'express';
 import { engine } from 'express-handlebars';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import ProductManager from './managers/ProductManager.js';
 import productsRouter from './routes/products.routes.js';
 import cartsRouter from './routes/carts.routes.js';
 
-// Para __dirname en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 7070;
 
-// Configurar Handlebars (MUY SIMPLE)
-app.engine('handlebars', engine());
+// 1. Servidor HTTP para Socket.io
+const httpServer = createServer(app);
+
+// 2. Configurar Socket.io
+const io = new Server(httpServer);
+
+// 3. Configurar Handlebars con layout personalizado
+app.engine('handlebars', engine({
+    layoutsDir: path.join(__dirname, 'vistas/plantillas'),
+    defaultLayout: 'principal'
+}));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'vistas'));
 
-// Middleware básico
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Crear instancia de ProductManager (UNA SOLA VEZ)
 const productManager = new ProductManager('./data/products.json');
 
-// Rutas API (las que ya tenías)
 app.use('/api/products', productsRouter);
 app.use('/api/carts', cartsRouter);
 
-// Ruta para vista INICIO
 app.get('/', async (req, res) => {
     try {
         const productos = await productManager.getProducts();
@@ -43,7 +49,6 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Ruta para vista TIEMPO REAL
 app.get('/tiemporeal', async (req, res) => {
     try {
         const productos = await productManager.getProducts();
@@ -57,9 +62,18 @@ app.get('/tiemporeal', async (req, res) => {
     }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-    console.log(` Servidor en http://localhost:${PORT}`);
+// 4. Configuración básica de Socket.io
+io.on('connection', (socket) => {
+    console.log('Cliente conectado:', socket.id);
+    
+    socket.on('disconnect', () => {
+        console.log('Cliente desconectado:', socket.id);
+    });
+});
+
+// 5. Usar httpServer en lugar de app.listen
+httpServer.listen(PORT, () => {
+    console.log(`Servidor en http://localhost:${PORT}`);
     console.log(`Inicio: http://localhost:${PORT}/`);
-    console.log(` Tiempo real: http://localhost:${PORT}/tiemporeal`);
+    console.log(`Tiempo real: http://localhost:${PORT}/tiemporeal`);
 });
