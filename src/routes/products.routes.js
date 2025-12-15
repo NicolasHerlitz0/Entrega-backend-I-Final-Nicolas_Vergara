@@ -1,53 +1,127 @@
-import express from 'express';
-import ProductManager from '../managers/ProductManager.js';
+import { Router } from "express";
+import ProductManager from "../managers/ProductManager.js";
 
-const router = express.Router();
-const productManager = new ProductManager();
+const router = Router();
+const manager = new ProductManager("./data/products.json");
 
-// Lista productos
-router.get('/', (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const products = productManager.getProducts();
+    const limit = req.query.limit;
+    const products = await manager.getProducts();
+
+    if (limit) {
+      const limitedProducts = products.slice(0, limit);
+      return res.json(limitedProducts);
+    }
+
     res.json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Producto por ID
-router.get('/:pid', (req, res) => {
+router.get("/:pid", async (req, res) => {
   try {
-    const product = productManager.getProductById(Number(req.params.pid));
+    const pid = Number(req.params.pid);
+
+    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
+      return res.status(400).json({
+        error: "El ID debe ser un número entero mayor a 0",
+      });
+    }
+
+    const product = await manager.getProductById(pid);
+
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
     res.json(product);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/', (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const newProduct = productManager.addProduct(req.body);
-    res.status(201).json(newProduct);
+    const newProduct = req.body;
+
+    if (!newProduct || Object.keys(newProduct).length === 0) {
+      return res.status(400).json({
+        error: "Se deben enviar datos del producto en el body",
+      });
+    }
+
+    const createdProduct = await manager.addProduct(newProduct);
+    res.status(201).json(createdProduct);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    if (
+      error.message.includes("requerido") ||
+      error.message.includes("ya existe")
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/:pid', (req, res) => {
+router.put("/:pid", async (req, res) => {
   try {
-    const updatedProduct = productManager.updateProduct(Number(req.params.pid), req.body);
+    const pid = Number(req.params.pid);
+    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
+      return res.status(400).json({
+        error: "El ID debe ser un número entero mayor a 0",
+      });
+    }
+
+    const updatedFields = req.body;
+
+    if (!updatedFields || Object.keys(updatedFields).length === 0) {
+      return res.status(400).json({
+        error: "Se deben enviar campos para actualizar en el body",
+      });
+    }
+
+    const updatedProduct = await manager.updateProduct(pid, updatedFields);
+
+    if (!updatedProduct) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
     res.json(updatedProduct);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    if (
+      error.message.includes("requerido") ||
+      error.message.includes("ya existe")
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/:pid', (req, res) => {
+router.delete("/:pid", async (req, res) => {
   try {
-    productManager.deleteProduct(Number(req.params.pid));
-    res.status(204).send();
+    const pid = Number(req.params.pid);
+
+    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
+      return res.status(400).json({
+        error: "El ID debe ser un número entero mayor a 0",
+      });
+    }
+
+    const deletedProduct = await manager.deleteProduct(pid);
+
+    if (!deletedProduct) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    res.json({
+      message: "Producto eliminado correctamente",
+      product: deletedProduct,
+    });
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 

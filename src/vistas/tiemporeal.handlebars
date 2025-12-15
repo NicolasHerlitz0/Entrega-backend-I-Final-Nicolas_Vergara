@@ -1,0 +1,61 @@
+<h2>Gestión de Productos en Tiempo Real</h2>
+
+<section>
+    <h3>Agregar Nuevo Producto</h3>
+    <form id="formAgregarProducto">
+        <input type="text" name="titulo" placeholder="Nombre" required>
+        <input type="text" name="descripcion" placeholder="Descripción" required>
+        <input type="number" name="precio" placeholder="Precio" step="0.01" required>
+        <input type="text" name="codigo" placeholder="Código único" required>
+        <input type="number" name="stock" placeholder="Stock" required>
+        <input type="text" name="categoria" placeholder="Categoría" required>
+        <button type="submit">Agregar Producto</button>
+    </form>
+</section>
+
+<section>
+    <h3>Productos Actuales</h3>
+    <div id="listaProductos">
+        {{#if productos.length}}
+            <ul>
+                {{#each productos}}
+                <li>
+                    {{this.titulo}} - ${{this.precio}} 
+                    <button class="btnEliminar" data-id="{{this.id}}">Eliminar</button>
+                </li>
+                {{/each}}
+            </ul>
+        {{else}}
+            <p>No hay productos disponibles.</p>
+        {{/if}}
+    </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    
+    // Manejar envío del formulario
+    document.getElementById('formAgregarProducto').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const producto = Object.fromEntries(formData);
+        
+        // Convertir tipos numéricos
+        producto.precio = parseFloat(producto.precio);
+        producto.stock = parseInt(producto.stock);
+        
+        // Emitir evento al servidor
+        socket.emit('agregarProducto', producto);
+        e.target.reset();
+    });
+    
+    // Manejar botones eliminar
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btnEliminar')) {
+            const productId = parseInt(e.target.dataset.id);
+            socket.emit('eliminarProducto', productId);
+        }
+    });
+</script>
