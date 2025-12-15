@@ -14,13 +14,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 7070;
 
-// 1. Servidor HTTP para Socket.io
 const httpServer = createServer(app);
-
-// 2. Configurar Socket.io
 const io = new Server(httpServer);
 
-// 3. Configurar Handlebars con layout personalizado
 app.engine('handlebars', engine({
     layoutsDir: path.join(__dirname, 'vistas/plantillas'),
     defaultLayout: 'principal'
@@ -62,16 +58,68 @@ app.get('/tiemporeal', async (req, res) => {
     }
 });
 
-// 4. Configuración básica de Socket.io
+// CONFIGURACIÓN COMPLETA DE SOCKET.IO
 io.on('connection', (socket) => {
     console.log('Cliente conectado:', socket.id);
-    
+
+    // Enviar productos actuales al cliente que se conecta
+    socket.on('solicitarProductos', async () => {
+        try {
+            const productos = await productManager.getProducts();
+            socket.emit('productosActualizados', productos);
+        } catch (error) {
+            console.error('Error al obtener productos:', error);
+        }
+    });
+
+    // Escuchar evento para agregar producto
+    socket.on('agregarProducto', async (productoData) => {
+        try {
+            // Agregar producto usando el ProductManager
+            const nuevoProducto = await productManager.addProduct(productoData);
+            
+            // Obtener todos los productos actualizados
+            const productos = await productManager.getProducts();
+            
+            // Emitir a TODOS los clientes conectados
+            io.emit('productosActualizados', productos);
+            
+            console.log('Producto agregado vía websocket:', nuevoProducto);
+        } catch (error) {
+            console.error('Error al agregar producto:', error);
+            // Enviar error solo al cliente que lo intentó
+            socket.emit('errorAgregarProducto', error.message);
+        }
+    });
+
+    // Escuchar evento para eliminar producto
+    socket.on('eliminarProducto', async (idProducto) => {
+        try {
+            // Eliminar producto usando el ProductManager
+            const productoEliminado = await productManager.deleteProduct(idProducto);
+            
+            if (productoEliminado) {
+                // Obtener todos los productos actualizados
+                const productos = await productManager.getProducts();
+                
+                // Emitir a TODOS los clientes conectados
+                io.emit('productosActualizados', productos);
+                
+                console.log('Producto eliminado vía websocket:', productoEliminado);
+            } else {
+                socket.emit('errorEliminarProducto', 'Producto no encontrado');
+            }
+        } catch (error) {
+            console.error('Error al eliminar producto:', error);
+            socket.emit('errorEliminarProducto', error.message);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Cliente desconectado:', socket.id);
     });
 });
 
-// 5. Usar httpServer en lugar de app.listen
 httpServer.listen(PORT, () => {
     console.log(`Servidor en http://localhost:${PORT}`);
     console.log(`Inicio: http://localhost:${PORT}/`);

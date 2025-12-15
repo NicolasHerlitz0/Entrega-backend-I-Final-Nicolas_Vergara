@@ -3,21 +3,22 @@
 <section>
     <h3>Agregar Nuevo Producto</h3>
     <form id="formAgregarProducto">
-        <input type="text" name="titulo" placeholder="Nombre" required>
-        <input type="text" name="descripcion" placeholder="Descripción" required>
-        <input type="number" name="precio" placeholder="Precio" step="0.01" required>
-        <input type="text" name="codigo" placeholder="Código único" required>
+        <input type="text" name="title" placeholder="Nombre" required>
+        <input type="text" name="description" placeholder="Descripción" required>
+        <input type="number" name="price" placeholder="Precio" step="0.01" required>
+        <input type="text" name="code" placeholder="Código único" required>
         <input type="number" name="stock" placeholder="Stock" required>
-        <input type="text" name="categoria" placeholder="Categoría" required>
+        <input type="text" name="category" placeholder="Categoría" required>
         <button type="submit">Agregar Producto</button>
     </form>
+    <div id="mensajeError" style="color: red; margin-top: 10px; display: none;"></div>
 </section>
 
 <section>
     <h3>Productos Actuales</h3>
     <div id="listaProductos">
         {{#if productos.length}}
-            <ul>
+            <ul id="listaProductosUL">
                 {{#each productos}}
                 <li>
                     {{this.title}} - ${{this.price}} 
@@ -34,7 +35,50 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
-    
+    const listaProductos = document.getElementById('listaProductos');
+    const mensajeError = document.getElementById('mensajeError');
+
+    // Función para mostrar productos
+    function mostrarProductos(productos) {
+        if (productos.length === 0) {
+            listaProductos.innerHTML = '<p>No hay productos disponibles.</p>';
+            return;
+        }
+
+        const html = `
+            <ul id="listaProductosUL">
+                ${productos.map(p => `
+                    <li>
+                        ${p.title} - $${p.price}
+                        <button class="btnEliminar" data-id="${p.id}">Eliminar</button>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+
+        listaProductos.innerHTML = html;
+    }
+
+    // Solicitar productos al conectarse
+    socket.emit('solicitarProductos');
+
+    // Escuchar actualizaciones del servidor
+    socket.on('productosActualizados', (productos) => {
+        mostrarProductos(productos);
+        mensajeError.style.display = 'none';
+    });
+
+    // Escuchar errores
+    socket.on('errorAgregarProducto', (mensaje) => {
+        mensajeError.textContent = 'Error al agregar: ' + mensaje;
+        mensajeError.style.display = 'block';
+    });
+
+    socket.on('errorEliminarProducto', (mensaje) => {
+        mensajeError.textContent = 'Error al eliminar: ' + mensaje;
+        mensajeError.style.display = 'block';
+    });
+
     // Manejar envío del formulario
     document.getElementById('formAgregarProducto').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -43,15 +87,15 @@
         const producto = Object.fromEntries(formData);
         
         // Convertir tipos numéricos
-        producto.precio = parseFloat(producto.precio);
+        producto.price = parseFloat(producto.price);
         producto.stock = parseInt(producto.stock);
         
         // Emitir evento al servidor
         socket.emit('agregarProducto', producto);
         e.target.reset();
     });
-    
-    // Manejar botones eliminar
+
+    // Manejar botones eliminar (usamos delegación de eventos)
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('btnEliminar')) {
             const productId = parseInt(e.target.dataset.id);
