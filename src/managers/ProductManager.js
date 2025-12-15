@@ -1,8 +1,8 @@
 import fs from 'fs';
 
 class ProductManager {
-  constructor() {
-    this.path = './data/products.json';
+  constructor(filePath) { 
+    this.path = filePath; 
     this.products = [];
     this.loadProducts();
   }
@@ -31,6 +31,20 @@ class ProductManager {
   }
 
   addProduct(productData) {
+    // Validar campos requeridos
+    const requiredFields = ['title', 'description', 'price', 'code', 'stock', 'category'];
+    for (const field of requiredFields) {
+      if (!productData[field]) {
+        throw new Error(`El campo ${field} es requerido`);
+      }
+    }
+    
+    // Validar que el código no exista
+    const existingProduct = this.products.find(p => p.code === productData.code);
+    if (existingProduct) {
+      throw new Error(`El producto con código ${productData.code} ya existe`);
+    }
+    
     const newProduct = {
       id: this.products.length > 0 ? Math.max(...this.products.map(p => p.id)) + 1 : 1,
       ...productData,
@@ -55,8 +69,10 @@ class ProductManager {
     const productIndex = this.products.findIndex(p => p.id === id);
     if (productIndex === -1) throw new Error("Producto no encontrado");
     
+    const deletedProduct = this.products[productIndex];
     this.products.splice(productIndex, 1);
     this.saveProducts();
+    return deletedProduct; 
   }
 }
 
