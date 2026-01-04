@@ -1,9 +1,10 @@
 {
   "name": "entrega-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Servidor backend para gestión de productos y carritos de compra.",
+  "main": "src/app.js",
   "scripts": {
+    "start": "node src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,5 +16,13 @@
     "express": "^4.18.2",
     "express-handlebars": "^8.0.4",
     "socket.io": "^4.8.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NicolasHerlitz0/Entrega-backend-Nicolas_Vergara.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NicolasHerlitz0/Entrega-backend-Nicolas_Vergara/issues"
+  },
+  "homepage": "https://github.com/NicolasHerlitz0/Entrega-backend-Nicolas_Vergara#readme"
 }
