@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 class ProductManager {
   constructor(filePath) {
     this.path = path.resolve(__dirname, '..', '..', filePath);
+    // podria cambiar a this.path = path.resolve(__dirname, '..', '..', 'data', 'products.json');
     console.log('DEBUG ProductManager: Ruta archivo:', this.path); 
     this.products = [];
     this.loadProducts();

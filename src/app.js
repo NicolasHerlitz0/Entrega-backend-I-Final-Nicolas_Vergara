@@ -13,9 +13,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 7070;
+const productManager = new ProductManager("./data/products.json");
 
 const httpServer = createServer(app);
-
 const io = new Server(httpServer, {
   path: "/socket.io",
   cors: {
@@ -37,7 +37,7 @@ app.set("views", path.join(__dirname, "vistas"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const productManager = new ProductManager("./data/products.json");
+
 
 app.use("/api/products", productsRouter);
 app.use("/api/carts", cartsRouter);
