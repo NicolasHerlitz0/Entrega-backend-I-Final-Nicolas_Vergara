@@ -1,4 +1,4 @@
-
+// se mantiene (conecta a DB, monta routers, vistas y sockets)
 import express from "express";
 import { engine } from "express-handlebars";
 import { fileURLToPath } from "url";

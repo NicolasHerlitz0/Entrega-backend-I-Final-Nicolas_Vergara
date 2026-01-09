@@ -1,4 +1,4 @@
-
+//actualizado para nuevos endpoints y populate
 import express from 'express';
 import CartManager from '../managers/CartManager.js';
 import { ok, err } from '../utils/responses.js';

@@ -1,4 +1,4 @@
-
+//actualizar para llamar a controller/service
 import { Router } from "express";
 import ProductManager from "../managers/ProductManager.js";
 import { ok, err } from "../utils/responses.js";
