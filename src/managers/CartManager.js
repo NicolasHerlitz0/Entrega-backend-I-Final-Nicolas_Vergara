@@ -1,3 +1,4 @@
+
 import fs from 'fs';
 
 class CartManager {
@@ -20,7 +21,7 @@ class CartManager {
     fs.writeFileSync(this.path, JSON.stringify(this.carts, null, 2));
   }
 
-    getCarts() {
+  getCarts() {
     return this.carts;
   }
 
@@ -29,31 +30,30 @@ class CartManager {
       id: this.carts.length > 0 ? Math.max(...this.carts.map(c => c.id)) + 1 : 1,
       products: []
     };
-    
+
     this.carts.push(newCart);
     this.saveCarts();
     return newCart;
   }
 
+  // Devuelve null si no existe
   getCartById(id) {
     const cart = this.carts.find(c => c.id === id);
-    if (!cart) throw new Error("Carrito no encontrado");
-    return cart;
+    return cart || null;
   }
 
+  // Devuelve null si el carrito no existe; si existe, agrega/incrementa
   addProductToCart(cartId, productId) {
     const cart = this.getCartById(cartId);
+    if (cart === null) return null;
+
     const existingProduct = cart.products.find(p => p.product === productId);
-    
     if (existingProduct) {
       existingProduct.quantity += 1;
     } else {
-      cart.products.push({
-        product: productId,
-        quantity: 1
-      });
+      cart.products.push({ product: productId, quantity: 1 });
     }
-    
+
     this.saveCarts();
     return cart;
   }

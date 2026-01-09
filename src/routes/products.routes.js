@@ -33,7 +33,7 @@ router.get("/:pid", async (req, res) => {
 
     const product = await manager.getProductById(pid);
 
-    if (!product) {
+    if (product === null) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
@@ -111,7 +111,7 @@ router.put("/:pid", async (req, res) => {
 
     const updatedProduct = await manager.updateProduct(pid, updated);
 
-    if (!updatedProduct) {
+    if (updatedProduct === null) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
@@ -136,7 +136,7 @@ router.delete("/:pid", async (req, res) => {
 
     const deletedProduct = await manager.deleteProduct(pid);
 
-    if (!deletedProduct) {
+    if (deletedProduct === null) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 

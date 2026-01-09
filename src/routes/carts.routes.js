@@ -31,15 +31,17 @@ router.get('/:cid', (req, res) => {
     const cid = Number(req.params.cid);
 
     if (isNaN(cid) || !Number.isInteger(cid) || cid <= 0) {
-      return res.status(400).json({
-        error: "El ID debe ser un número entero mayor a 0"
-      });
+      return res.status(400).json({ error: "El ID debe ser un número entero mayor a 0" });
     }
 
     const cart = cartManager.getCartById(cid);
+    if (cart === null) {
+      return res.status(404).json({ error: "Carrito no encontrado" });
+    }
+
     res.json(cart);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -53,15 +55,17 @@ router.post('/:cid/product/:pid', (req, res) => {
       isNaN(cid) || !Number.isInteger(cid) || cid <= 0 ||
       isNaN(pid) || !Number.isInteger(pid) || pid <= 0
     ) {
-      return res.status(400).json({
-        error: "Los IDs deben ser números enteros mayores a 0"
-      });
+      return res.status(400).json({ error: "Los IDs deben ser números enteros mayores a 0" });
     }
 
     const cart = cartManager.addProductToCart(cid, pid);
+    if (cart === null) {
+      return res.status(404).json({ error: "Carrito no encontrado" });
+    }
+
     res.json(cart);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
