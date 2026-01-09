@@ -1,6 +1,12 @@
 
 import express from 'express';
 import CartManager from '../managers/CartManager.js';
+import { ok, err } from '../utils/responses.js';
+import {
+  INVALID_ID,
+  CART_NOT_FOUND,
+  INTERNAL_ERROR
+} from '../utils/errorCodes.js';
 
 const router = express.Router();
 const cartManager = new CartManager();
@@ -9,9 +15,9 @@ const cartManager = new CartManager();
 router.get('/', (req, res) => {
   try {
     const carts = cartManager.getCarts();
-    res.json(carts);
+    return ok(res, carts);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return err(res, 500, INTERNAL_ERROR, 'Error interno del servidor');
   }
 });
 
@@ -19,9 +25,11 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const newCart = cartManager.createCart();
-    res.status(201).json(newCart);
+    // Éxito con data; si quieres incluir mensaje: ok(res, newCart, "Carrito creado")
+    res.status(201);
+    return ok(res, newCart);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return err(res, 500, INTERNAL_ERROR, 'Error interno del servidor');
   }
 });
 
@@ -31,17 +39,17 @@ router.get('/:cid', (req, res) => {
     const cid = Number(req.params.cid);
 
     if (isNaN(cid) || !Number.isInteger(cid) || cid <= 0) {
-      return res.status(400).json({ error: "El ID debe ser un número entero mayor a 0" });
+      return err(res, 400, INVALID_ID, 'El ID debe ser un número entero mayor a 0');
     }
 
     const cart = cartManager.getCartById(cid);
     if (cart === null) {
-      return res.status(404).json({ error: "Carrito no encontrado" });
+      return err(res, 404, CART_NOT_FOUND, 'Carrito no encontrado');
     }
 
-    res.json(cart);
+    return ok(res, cart);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return err(res, 500, INTERNAL_ERROR, 'Error interno del servidor');
   }
 });
 
@@ -55,17 +63,17 @@ router.post('/:cid/product/:pid', (req, res) => {
       isNaN(cid) || !Number.isInteger(cid) || cid <= 0 ||
       isNaN(pid) || !Number.isInteger(pid) || pid <= 0
     ) {
-      return res.status(400).json({ error: "Los IDs deben ser números enteros mayores a 0" });
+      return err(res, 400, INVALID_ID, 'Los IDs deben ser números enteros mayores a 0');
     }
 
     const cart = cartManager.addProductToCart(cid, pid);
     if (cart === null) {
-      return res.status(404).json({ error: "Carrito no encontrado" });
+      return err(res, 404, CART_NOT_FOUND, 'Carrito no encontrado');
     }
 
-    res.json(cart);
+    return ok(res, cart);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return err(res, 500, INTERNAL_ERROR, 'Error interno del servidor');
   }
 });
 

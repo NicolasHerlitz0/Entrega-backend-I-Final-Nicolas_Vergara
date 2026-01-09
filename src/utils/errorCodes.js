@@ -1,0 +1,9 @@
+
+// src/utils/errorCodes.js
+export const INVALID_ID = "INVALID_ID";
+export const PRODUCT_NOT_FOUND = "PRODUCT_NOT_FOUND";
+export const CART_NOT_FOUND = "CART_NOT_FOUND";
+export const MISSING_FIELD = "MISSING_FIELD";
+export const INVALID_FIELD_TYPE = "INVALID_FIELD_TYPE";
+export const CODE_ALREADY_EXISTS = "CODE_ALREADY_EXISTS";
+export const INTERNAL_ERROR = "INTERNAL_ERROR";
