@@ -38,15 +38,5 @@
     "stock": 6,
     "category": "monitors",
     "status": true
-  },
-  {
-    "id": 5,
-    "title": "prueba ",
-    "description": "prueba",
-    "price": 123,
-    "code": "prueba",
-    "stock": 123,
-    "category": "prueba",
-    "status": true
   }
 ]
