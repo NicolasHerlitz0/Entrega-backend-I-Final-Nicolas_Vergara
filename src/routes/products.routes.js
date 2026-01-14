@@ -1,6 +1,5 @@
-//actualizar para llamar a controller/service
 import { Router } from "express";
-import ProductManager from "../managers/ProductManager.js";
+import ProductService from "../services/product.service.js";
 import { ok, err } from "../utils/responses.js";
 import {
   INVALID_ID,
@@ -11,33 +10,59 @@ import {
 } from "../utils/errorCodes.js";
 
 const router = Router();
-const manager = new ProductManager("./data/products.json");
+const productService = new ProductService();
 
+// GET /api/products (con paginación, filtros y ordenamiento)
 router.get("/", async (req, res) => {
   try {
-    const limit = req.query.limit;
-    const products = await manager.getProducts();
+    const { limit, page, query, sort } = req.query;
 
-    if (limit) {
-      const limitedProducts = products.slice(0, limit);
-      return ok(res, limitedProducts);
+    // Preparar opciones para el servicio
+    const options = {
+      limit: limit ? parseInt(limit) : 10,
+      page: page ? parseInt(page) : 1,
+      query: {},
+      sort: sort || null
+    };
+
+    // Procesar query parameters para filtros
+    if (req.query.category) {
+      options.query.category = req.query.category;
+    }
+    if (req.query.status !== undefined) {
+      options.query.status = req.query.status;
     }
 
-    return ok(res, products);
+    // Validar parámetros numéricos
+    if (options.limit <= 0 || options.page <= 0) {
+      return err(res, 400, INVALID_ID, "limit y page deben ser mayores a 0");
+    }
+
+    const result = await productService.getPaginatedProducts(options);
+
+    if (result === null) {
+      return err(res, 500, INTERNAL_ERROR, "Error al obtener productos paginados");
+    }
+
+    // Enviar respuesta con formato estandarizado
+    return res.status(200).json(result);
   } catch (error) {
+    console.error(error);
     return err(res, 500, INTERNAL_ERROR, "Error interno del servidor");
   }
 });
 
+// GET /api/products/:pid
 router.get("/:pid", async (req, res) => {
   try {
-    const pid = Number(req.params.pid);
+    const pid = req.params.pid;
 
-    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
-      return err(res, 400, INVALID_ID, "El ID debe ser un número entero mayor a 0");
+    // Validar formato de ObjectId
+    if (pid.length !== 24) {
+      return err(res, 400, INVALID_ID, "El ID debe ser un ObjectId válido (24 caracteres)");
     }
 
-    const product = await manager.getProductById(pid);
+    const product = await productService.getProductById(pid);
 
     if (product === null) {
       return err(res, 404, PRODUCT_NOT_FOUND, "Producto no encontrado");
@@ -45,10 +70,12 @@ router.get("/:pid", async (req, res) => {
 
     return ok(res, product);
   } catch (error) {
+    console.error(error);
     return err(res, 500, INTERNAL_ERROR, "Error interno del servidor");
   }
 });
 
+// POST /api/products
 router.post("/", async (req, res) => {
   try {
     const body = req.body;
@@ -60,6 +87,7 @@ router.post("/", async (req, res) => {
       }
     }
 
+    // Validaciones de tipos
     if (isNaN(Number(body.price)) || Number(body.price) <= 0) {
       return err(res, 400, MISSING_FIELD, "price debe ser numérico mayor a 0");
     }
@@ -67,25 +95,34 @@ router.post("/", async (req, res) => {
       return err(res, 400, MISSING_FIELD, "stock debe ser un entero ≥ 0");
     }
 
-    body.price = Number(body.price);
-    body.stock = Number(body.stock);
+    // Convertir tipos
+    const productData = {
+      ...body,
+      price: Number(body.price),
+      stock: Number(body.stock)
+    };
 
-    const createdProduct = await manager.addProduct(body);
+    const createdProduct = await productService.addProduct(productData);
+
+    if (createdProduct === null) {
+      return err(res, 400, CODE_ALREADY_EXISTS, "El código del producto ya existe");
+    }
+
     res.status(201);
     return ok(res, createdProduct);
   } catch (error) {
-    if (error.message.includes("ya existe")) {
-      return err(res, 400, CODE_ALREADY_EXISTS, error.message);
-    }
+    console.error(error);
     return err(res, 500, INTERNAL_ERROR, "Error interno del servidor");
   }
 });
 
+// PUT /api/products/:pid
 router.put("/:pid", async (req, res) => {
   try {
-    const pid = Number(req.params.pid);
-    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
-      return err(res, 400, INVALID_ID, "El ID debe ser un número entero mayor a 0");
+    const pid = req.params.pid;
+    
+    if (pid.length !== 24) {
+      return err(res, 400, INVALID_ID, "El ID debe ser un ObjectId válido (24 caracteres)");
     }
 
     const updated = req.body;
@@ -100,6 +137,7 @@ router.put("/:pid", async (req, res) => {
       }
     }
 
+    // Validaciones específicas
     if ("price" in updated) {
       if (isNaN(Number(updated.price)) || Number(updated.price) <= 0) {
         return err(res, 400, MISSING_FIELD, "price debe ser numérico mayor a 0");
@@ -114,38 +152,37 @@ router.put("/:pid", async (req, res) => {
       updated.stock = Number(updated.stock);
     }
 
-    const updatedProduct = await manager.updateProduct(pid, updated);
+    const updatedProduct = await productService.updateProduct(pid, updated);
 
     if (updatedProduct === null) {
-      return err(res, 404, PRODUCT_NOT_FOUND, "Producto no encontrado");
+      return err(res, 404, PRODUCT_NOT_FOUND, "Producto no encontrado o código duplicado");
     }
 
     return ok(res, updatedProduct);
   } catch (error) {
-    if (error.message.includes("ya existe")) {
-      return err(res, 400, CODE_ALREADY_EXISTS, error.message);
-    }
+    console.error(error);
     return err(res, 500, INTERNAL_ERROR, "Error interno del servidor");
   }
 });
 
+// DELETE /api/products/:pid
 router.delete("/:pid", async (req, res) => {
   try {
-    const pid = Number(req.params.pid);
+    const pid = req.params.pid;
 
-    if (isNaN(pid) || !Number.isInteger(pid) || pid <= 0) {
-      return err(res, 400, INVALID_ID, "El ID debe ser un número entero mayor a 0");
+    if (pid.length !== 24) {
+      return err(res, 400, INVALID_ID, "El ID debe ser un ObjectId válido (24 caracteres)");
     }
 
-    const deletedProduct = await manager.deleteProduct(pid);
+    const deletedProduct = await productService.deleteProduct(pid);
 
     if (deletedProduct === null) {
       return err(res, 404, PRODUCT_NOT_FOUND, "Producto no encontrado");
     }
 
-    // Puedes usar ok(res, deletedProduct, "Producto eliminado correctamente")
     return ok(res, { product: deletedProduct }, "Producto eliminado correctamente");
   } catch (error) {
+    console.error(error);
     return err(res, 500, INTERNAL_ERROR, "Error interno del servidor");
   }
 });

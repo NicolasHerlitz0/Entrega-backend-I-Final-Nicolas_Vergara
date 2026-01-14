@@ -1,4 +1,5 @@
 import Product from '../models/product.models.js';
+import { buildLinksSimple } from '../utils/buildLinks.js';
 
 class ProductService {
   // Obtener todos los productos (sin paginación, para compatibilidad)
@@ -150,6 +151,14 @@ class ProductService {
       const hasPrevPage = page > 1;
       const hasNextPage = page < totalPages;
 
+      // Generar links de paginación
+      const { prevLink, nextLink } = buildLinksSimple(
+        '/api/products',
+        page,
+        totalPages,
+        { limit, sort, query }
+      );
+
       return {
         status: 'success',
         payload: products,
@@ -159,8 +168,8 @@ class ProductService {
         page: parseInt(page),
         hasPrevPage,
         hasNextPage,
-        prevLink: null, // Se completará en buildLinks.js
-        nextLink: null  // Se completará en buildLinks.js
+        prevLink,
+        nextLink
       };
     } catch (error) {
       console.error('Error en getPaginatedProducts:', error.message);
