@@ -1,4 +1,156 @@
-// NUEVO: listado con paginación
+<h2>Productos con Paginación</h2>
 
-En este script irá el listado de productos con paginación (prev/next, páginas, botones).
-Y funcionará para visualizar /products consumiendo el GET paginado.
+<!-- Filtros y ordenamiento -->
+<section style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+    <h3>Filtrar y Ordenar</h3>
+    <form id="filterForm" method="GET" action="/products">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div>
+                <label for="limit">Productos por página:</label>
+                <select name="limit" id="limit">
+                    <option value="5" {{#if (eq query.limit "5")}}selected{{/if}}>5</option>
+                    <option value="10" {{#unless query.limit}}selected{{/unless}} {{#if (eq query.limit "10")}}selected{{/if}}>10</option>
+                    <option value="20" {{#if (eq query.limit "20")}}selected{{/if}}>20</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="sort">Ordenar por precio:</label>
+                <select name="sort" id="sort">
+                    <option value="">Sin orden</option>
+                    <option value="asc" {{#if (eq query.sort "asc")}}selected{{/if}}>Menor a Mayor</option>
+                    <option value="desc" {{#if (eq query.sort "desc")}}selected{{/if}}>Mayor a Menor</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="category">Categoría:</label>
+                <input type="text" name="category" id="category" placeholder="Ej: computers" value="{{query.category}}">
+            </div>
+            
+            <div>
+                <label for="status">Disponible:</label>
+                <select name="status" id="status">
+                    <option value="">Todos</option>
+                    <option value="true" {{#if (eq query.status "true")}}selected{{/if}}>Sí</option>
+                    <option value="false" {{#if (eq query.status "false")}}selected{{/if}}>No</option>
+                </select>
+            </div>
+            
+            <div>
+                <button type="submit">Aplicar</button>
+                <a href="/products" style="margin-left: 10px;">Limpiar</a>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Lista de productos -->
+<section>
+    {{#if payload.length}}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+            {{#each payload}}
+            <div style="border: 1px solid #ccc; padding: 15px; border-radius: 5px;">
+                <h4>{{this.title}}</h4>
+                <p><strong>Precio:</strong> ${{this.price}}</p>
+                <p><small>{{this.description}}</small></p>
+                <p><small><strong>Categoría:</strong> {{this.category}}</small></p>
+                <p><small><strong>Stock:</strong> {{this.stock}}</small></p>
+                <p><small><strong>Código:</strong> {{this.code}}</small></p>
+                <p><small><strong>Disponible:</strong> {{#if this.status}}Sí{{else}}No{{/if}}</small></p>
+                
+                <!-- Botón para agregar al carrito -->
+                <button class="addToCartBtn" data-product-id="{{this._id}}" 
+                        style="background-color: #4CAF50; color: white; padding: 8px 12px; border: none; border-radius: 3px; cursor: pointer;">
+                    Agregar al carrito
+                </button>
+            </div>
+            {{/each}}
+        </div>
+    {{else}}
+        <p>No hay productos disponibles.</p>
+    {{/if}}
+</section>
+
+<!-- Paginación -->
+<section style="margin-top: 30px; text-align: center;">
+    <div style="display: inline-block;">
+        {{#if hasPrevPage}}
+            <a href="{{prevLink}}" style="margin-right: 15px; padding: 8px 12px; background-color: #007bff; color: white; text-decoration: none; border-radius: 3px;">
+                ← Página anterior
+            </a>
+        {{/if}}
+        
+        <span style="margin: 0 15px;">
+            Página {{page}} de {{totalPages}}
+        </span>
+        
+        {{#if hasNextPage}}
+            <a href="{{nextLink}}" style="margin-left: 15px; padding: 8px 12px; background-color: #007bff; color: white; text-decoration: none; border-radius: 3px;">
+                Página siguiente →
+            </a>
+        {{/if}}
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <form method="GET" action="/products" style="display: inline-block;">
+            <input type="number" name="page" min="1" max="{{totalPages}}" value="{{page}}" style="width: 60px; padding: 5px;">
+            <button type="submit">Ir a página</button>
+        </form>
+    </div>
+</section>
+
+<!-- Mensaje de respuesta -->
+<div id="cartMessage" style="position: fixed; top: 20px; right: 20px; padding: 15px; border-radius: 5px; display: none;"></div>
+
+<script>
+    // Helper para comparación en Handlebars (necesario para los selects)
+    Handlebars.registerHelper('eq', function(a, b) {
+        return a === b;
+    });
+    
+    // Agregar al carrito
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('addToCartBtn')) {
+            const productId = e.target.dataset.productId;
+            const cartId = prompt('Ingrese el ID del carrito (puede crear uno en /api/carts POST):');
+            
+            if (!cartId) return;
+            
+            try {
+                const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                const messageDiv = document.getElementById('cartMessage');
+                
+                if (response.ok && result.success) {
+                    messageDiv.style.backgroundColor = '#4CAF50';
+                    messageDiv.textContent = 'Producto agregado al carrito correctamente';
+                } else {
+                    messageDiv.style.backgroundColor = '#f44336';
+                    messageDiv.textContent = result.error?.message || 'Error al agregar al carrito';
+                }
+                
+                messageDiv.style.display = 'block';
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                const messageDiv = document.getElementById('cartMessage');
+                messageDiv.style.backgroundColor = '#f44336';
+                messageDiv.textContent = 'Error de conexión';
+                messageDiv.style.display = 'block';
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+    });
+</script>

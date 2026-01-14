@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { connectDB } from "./db/connection.js";
 import ProductService from "./services/product.service.js";
+import CartService from "./services/cart.service.js";
 import productsRouter from "./routes/products.routes.js";
 import cartsRouter from "./routes/carts.routes.js";
 import registerProductSockets from "./sockets/products.socket.js";
@@ -19,8 +20,9 @@ const PORT = process.env.PORT || 7070;
 // Conectar a MongoDB
 await connectDB();
 
-// Inicializar servicios (ya no managers)
+// Inicializar servicios
 const productService = new ProductService();
+const cartService = new CartService();
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -36,6 +38,9 @@ app.engine(
   engine({
     layoutsDir: path.join(__dirname, "vistas/plantillas"),
     defaultLayout: "principal",
+    helpers: {
+      eq: (a, b) => a === b, // Helper para comparaciones en Handlebars
+    }
   })
 );
 app.set("view engine", "handlebars");
@@ -43,6 +48,14 @@ app.set("views", path.join(__dirname, "vistas"));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Method override para formularios (PUT/DELETE)
+app.use((req, res, next) => {
+  if (req.query._method) {
+    req.method = req.query._method;
+  }
+  next();
+});
 
 app.use("/api/products", productsRouter);
 app.use("/api/carts", cartsRouter);
@@ -61,6 +74,112 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Vista de productos con paginación
+app.get("/products", async (req, res) => {
+  try {
+    const { limit, page, sort, category, status } = req.query;
+    
+    const options = {
+      limit: limit ? parseInt(limit) : 10,
+      page: page ? parseInt(page) : 1,
+      sort: sort || null,
+      query: {}
+    };
+    
+    if (category) options.query.category = category;
+    if (status !== undefined) options.query.status = status;
+    
+    const result = await productService.getPaginatedProducts(options);
+    
+    if (result === null) {
+      return res.status(500).render("error", { 
+        titulo: "Error",
+        mensaje: "Error al cargar productos" 
+      });
+    }
+    
+    res.render("products", {
+      titulo: "Productos",
+      ...result,
+      query: req.query
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).render("error", { 
+      titulo: "Error", 
+      mensaje: "Error interno del servidor" 
+    });
+  }
+});
+
+// Vista de detalle de producto (Opción A - opcional)
+app.get("/products/:pid", async (req, res) => {
+  try {
+    const { pid } = req.params;
+    
+    if (pid.length !== 24) {
+      return res.status(400).render("error", { 
+        titulo: "Error", 
+        mensaje: "ID de producto inválido" 
+      });
+    }
+    
+    const producto = await productService.getProductById(pid);
+    
+    if (!producto) {
+      return res.status(404).render("error", { 
+        titulo: "No encontrado", 
+        mensaje: "Producto no encontrado" 
+      });
+    }
+    
+    res.render("productDetail", {
+      titulo: producto.title,
+      producto
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).render("error", { 
+      titulo: "Error", 
+      mensaje: "Error interno del servidor" 
+    });
+  }
+});
+
+// Vista de detalle de carrito
+app.get("/carts/:cid", async (req, res) => {
+  try {
+    const { cid } = req.params;
+    
+    if (cid.length !== 24) {
+      return res.status(400).render("error", { 
+        titulo: "Error", 
+        mensaje: "ID de carrito inválido" 
+      });
+    }
+    
+    const cart = await cartService.getCartById(cid);
+    
+    if (!cart) {
+      return res.status(404).render("error", { 
+        titulo: "No encontrado", 
+        mensaje: "Carrito no encontrado" 
+      });
+    }
+    
+    res.render("cartDetail", {
+      titulo: `Carrito ${cid}`,
+      cart
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).render("error", { 
+      titulo: "Error", 
+      mensaje: "Error interno del servidor" 
+    });
+  }
+});
+
 // Vista de tiempo real
 app.get("/tiemporeal", async (req, res) => {
   try {
@@ -75,12 +194,14 @@ app.get("/tiemporeal", async (req, res) => {
   }
 });
 
-// Registrar sockets con el servicio de productos
+// Registrar sockets
 registerProductSockets(io, productService);
 
 httpServer.listen(PORT, () => {
   console.log(`Servidor en http://localhost:${PORT}`);
   console.log(`Inicio: http://localhost:${PORT}/`);
+  console.log(`Productos (paginación): http://localhost:${PORT}/products`);
   console.log(`Tiempo real: http://localhost:${PORT}/tiemporeal`);
+  console.log(`Ejemplo carrito: http://localhost:${PORT}/carts/[ID_CARRITO]`);
   console.log(`Socket.io endpoint: http://localhost:${PORT}/socket.io/socket.io.js`);
 });

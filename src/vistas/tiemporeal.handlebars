@@ -22,7 +22,7 @@
                 {{#each productos}}
                 <li>
                     {{this.title}} - ${{this.price}} 
-                    <button class="btnEliminar" data-id="{{this.id}}">Eliminar</button>
+                    <button class="btnEliminar" data-id="{{this._id}}">Eliminar</button>
                 </li>
                 {{/each}}
             </ul>
@@ -50,7 +50,7 @@
                 ${productos.map(p => `
                     <li>
                         ${p.title} - $${p.price}
-                        <button class="btnEliminar" data-id="${p.id}">Eliminar</button>
+                        <button class="btnEliminar" data-id="${p._id}">Eliminar</button>
                     </li>
                 `).join('')}
             </ul>
@@ -96,7 +96,7 @@
     // Manejar botones eliminar
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('btnEliminar')) {
-            const productId = parseInt(e.target.dataset.id);
+            const productId = e.target.dataset.id; // Ya es string (ObjectId)
             socket.emit('eliminarProducto', productId);
         }
     });

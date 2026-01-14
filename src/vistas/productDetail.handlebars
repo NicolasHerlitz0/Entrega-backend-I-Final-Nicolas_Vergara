@@ -1,3 +1,81 @@
-// NUEVO: detalle /products/:pid (si aplicas opción A)
-En este script irá la ficha del producto (detalle completo + botón “Agregar al carrito”).
-Y funcionará para la ruta /products/:pid (si eliges la opción A de la consigna).
+<h2>Detalle del Producto</h2>
+
+{{#if producto}}
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+        <h3>{{producto.title}}</h3>
+        <p><strong>Descripción:</strong> {{producto.description}}</p>
+        <p><strong>Precio:</strong> ${{producto.price}}</p>
+        <p><strong>Categoría:</strong> {{producto.category}}</p>
+        <p><strong>Stock:</strong> {{producto.stock}} unidades</p>
+        <p><strong>Código:</strong> {{producto.code}}</p>
+        <p><strong>Disponible:</strong> {{#if producto.status}}Sí{{else}}No{{/if}}</p>
+        
+        <!-- Botón para agregar al carrito -->
+        <div style="margin-top: 20px;">
+            <label for="cartId">ID del carrito:</label>
+            <input type="text" id="cartIdInput" placeholder="Ej: 507f1f77bcf86cd799439011" style="margin-left: 10px; padding: 5px;">
+            <button id="addToCartBtn" data-product-id="{{producto._id}}" 
+                    style="margin-left: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Agregar al carrito
+            </button>
+        </div>
+        
+        <div id="message" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/products">Volver a la lista de productos</a>
+        </div>
+    </div>
+{{else}}
+    <p>Producto no encontrado.</p>
+    <a href="/products">Volver a la lista de productos</a>
+{{/if}}
+
+<script>
+    document.getElementById('addToCartBtn').addEventListener('click', async () => {
+        const productId = document.getElementById('addToCartBtn').dataset.productId;
+        const cartId = document.getElementById('cartIdInput').value.trim();
+        
+        if (!cartId) {
+            showMessage('Por favor ingrese un ID de carrito', 'error');
+            return;
+        }
+        
+        if (cartId.length !== 24) {
+            showMessage('El ID del carrito debe tener 24 caracteres', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/carts/${cartId}/product/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showMessage('Producto agregado al carrito correctamente', 'success');
+            } else {
+                showMessage(result.error?.message || 'Error al agregar al carrito', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showMessage('Error de conexión', 'error');
+        }
+    });
+    
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.style.display = 'block';
+        messageDiv.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+        messageDiv.style.color = 'white';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    }
+</script>

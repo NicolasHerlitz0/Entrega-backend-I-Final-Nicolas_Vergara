@@ -1,3 +1,64 @@
-// NUEVO: detalle /carts/:cid
-En este script irá la ficha del producto (detalle completo + botón “Agregar al carrito”).
-Y funcionará para la ruta /products/:pid (si eliges la opción A de la consigna).
+<h2>Detalle del Carrito</h2>
+
+{{#if cart}}
+    <p><strong>ID del carrito:</strong> {{cart._id}}</p>
+    <p><strong>Productos en el carrito:</strong> {{cart.products.length}}</p>
+    
+    {{#if cart.products.length}}
+        <div style="margin-top: 20px;">
+            <h3>Productos:</h3>
+            <div style="display: grid; gap: 15px;">
+                {{#each cart.products}}
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+                    {{#if this.product}}
+                        <h4>{{this.product.title}}</h4>
+                        <p><strong>Precio:</strong> ${{this.product.price}}</p>
+                        <p><strong>Categoría:</strong> {{this.product.category}}</p>
+                        <p><strong>Cantidad:</strong> {{this.quantity}}</p>
+                        <p><strong>Subtotal:</strong> ${{multiply this.product.price this.quantity}}</p>
+                        
+                        <!-- Botones para actualizar cantidad o eliminar -->
+                        <div style="margin-top: 10px;">
+                            <form method="POST" action="/api/carts/{{../cart._id}}/products/{{this.product._id}}?_method=PUT" style="display: inline;">
+                                <input type="number" name="quantity" value="{{this.quantity}}" min="1" style="width: 60px; padding: 3px;">
+                                <button type="submit">Actualizar</button>
+                            </form>
+                            
+                            <form method="POST" action="/api/carts/{{../cart._id}}/products/{{this.product._id}}?_method=DELETE" style="display: inline; margin-left: 10px;">
+                                <button type="submit" style="background-color: #f44336; color: white;">Eliminar</button>
+                            </form>
+                        </div>
+                    {{else}}
+                        <p>Producto no disponible (ID: {{this.product}})</p>
+                    {{/if}}
+                </div>
+                {{/each}}
+            </div>
+            
+            <!-- Vaciar carrito -->
+            <div style="margin-top: 30px;">
+                <form method="POST" action="/api/carts/{{cart._id}}?_method=DELETE">
+                    <button type="submit" style="background-color: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 4px;">
+                        Vaciar carrito
+                    </button>
+                </form>
+            </div>
+        </div>
+    {{else}}
+        <p>El carrito está vacío.</p>
+    {{/if}}
+    
+    <div style="margin-top: 30px;">
+        <a href="/products">Seguir comprando</a>
+    </div>
+{{else}}
+    <p>Carrito no encontrado.</p>
+    <a href="/products">Volver a productos</a>
+{{/if}}
+
+<script>
+    // Helper para multiplicar (precio * cantidad)
+    Handlebars.registerHelper('multiply', function(a, b) {
+        return (a * b).toFixed(2);
+    });
+</script>
