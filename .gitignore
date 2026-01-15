@@ -21,7 +21,7 @@ Thumbs.db
 data (referencia migracion)/
 src/managers/
 src/controllers/
-
+src/utils/buildLinks(copia).js
 # Archivos ZIP de entrega
 *.zip
 Entrega-backend I Final-Nicolas_Vergara.zip
