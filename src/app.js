@@ -39,7 +39,12 @@ app.engine(
     layoutsDir: path.join(__dirname, "vistas/plantillas"),
     defaultLayout: "principal",
     helpers: {
-      eq: (a, b) => a === b, // Helper para comparaciones en Handlebars
+      eq: (a, b) => a === b,
+    },
+    // Agregar esto:
+    runtimeOptions: {
+      allowProtoPropertiesByDefault: true,
+      allowProtoMethodsByDefault: true
     }
   })
 );
@@ -86,8 +91,12 @@ app.get("/products", async (req, res) => {
       query: {}
     };
     
-    if (category) options.query.category = category;
-    if (status !== undefined) options.query.status = status;
+   if (category && category.trim() !== "") {
+      options.query.category = category;
+    }
+ if (status !== undefined && status !== "") {
+      options.query.status = status === 'true' || status === true;
+    }
     
     const result = await productService.getPaginatedProducts(options);
     

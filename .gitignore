@@ -16,3 +16,15 @@ yarn-error.log*
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Archivos de migración/respaldo antiguos
+data (referencia migracion)/
+managers/
+controllers/
+
+# Archivos ZIP de entrega
+*.zip
+Entrega-backend I Final-Nicolas_Vergara.zip
+
+# Scripts temporales de migración
+migrate-products.js
