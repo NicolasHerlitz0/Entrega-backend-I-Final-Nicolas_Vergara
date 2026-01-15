@@ -19,7 +19,7 @@ Thumbs.db
 
 # Archivos de migración/respaldo antiguos
 data (referencia migracion)/
-src/managers (referencia migracion)/
+src/managers/
 src/controllers/
 
 # Archivos ZIP de entrega
