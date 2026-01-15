@@ -31,3 +31,4 @@ migrate-products.js
 
 # Vista alternativa
 src/vistas/productDetail.handlebars
+src/vista productDetail.js

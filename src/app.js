@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 7070;
 // Conectar a MongoDB
 await connectDB();
 
-// Inicializar servicios
+// Servicios
 const productService = new ProductService();
 const cartService = new CartService();
 
@@ -41,11 +41,11 @@ app.engine(
     helpers: {
       eq: (a, b) => a === b,
     },
-    // Agregar esto:
+    
     runtimeOptions: {
       allowProtoPropertiesByDefault: true,
-      allowProtoMethodsByDefault: true
-    }
+      allowProtoMethodsByDefault: true,
+    },
   })
 );
 app.set("view engine", "handlebars");
@@ -54,7 +54,7 @@ app.set("views", path.join(__dirname, "vistas"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Method override para formularios (PUT/DELETE)
+
 app.use((req, res, next) => {
   if (req.query._method) {
     req.method = req.query._method;
@@ -83,108 +83,75 @@ app.get("/", async (req, res) => {
 app.get("/products", async (req, res) => {
   try {
     const { limit, page, sort, category, status } = req.query;
-    
+
     const options = {
       limit: limit ? parseInt(limit) : 10,
       page: page ? parseInt(page) : 1,
       sort: sort || null,
-      query: {}
+      query: {},
     };
-    
-   if (category && category.trim() !== "") {
+
+    if (category && category.trim() !== "") {
       options.query.category = category;
     }
- if (status !== undefined && status !== "") {
-      options.query.status = status === 'true' || status === true;
+    if (status !== undefined && status !== "") {
+      options.query.status = status === "true" || status === true;
     }
-    
+
     const result = await productService.getPaginatedProducts(options);
-    
+
     if (result === null) {
-      return res.status(500).render("error", { 
+      return res.status(500).render("error", {
         titulo: "Error",
-        mensaje: "Error al cargar productos" 
+        mensaje: "Error al cargar productos",
       });
     }
-    
+
     res.render("products", {
       titulo: "Productos",
       ...result,
-      query: req.query
+      query: req.query,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).render("error", { 
-      titulo: "Error", 
-      mensaje: "Error interno del servidor" 
+    res.status(500).render("error", {
+      titulo: "Error",
+      mensaje: "Error interno del servidor",
     });
   }
 });
 
-// Vista de detalle de producto (Opción A - opcional)
-app.get("/products/:pid", async (req, res) => {
-  try {
-    const { pid } = req.params;
-    
-    if (pid.length !== 24) {
-      return res.status(400).render("error", { 
-        titulo: "Error", 
-        mensaje: "ID de producto inválido" 
-      });
-    }
-    
-    const producto = await productService.getProductById(pid);
-    
-    if (!producto) {
-      return res.status(404).render("error", { 
-        titulo: "No encontrado", 
-        mensaje: "Producto no encontrado" 
-      });
-    }
-    
-    res.render("productDetail", {
-      titulo: producto.title,
-      producto
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).render("error", { 
-      titulo: "Error", 
-      mensaje: "Error interno del servidor" 
-    });
-  }
-});
 
 // Vista de detalle de carrito
 app.get("/carts/:cid", async (req, res) => {
   try {
     const { cid } = req.params;
-    
+
     if (cid.length !== 24) {
-      return res.status(400).render("error", { 
-        titulo: "Error", 
-        mensaje: "ID de carrito inválido" 
+      return res.status(400).render("error", {
+        titulo: "Error",
+        mensaje: "ID de carrito inválido",
       });
     }
-    
+
     const cart = await cartService.getCartById(cid);
-    
+
     if (!cart) {
-      return res.status(404).render("error", { 
-        titulo: "No encontrado", 
-        mensaje: "Carrito no encontrado" 
+      return res.status(404).render("error", {
+        titulo: "No encontrado",
+        mensaje: "Carrito no encontrado",
       });
     }
-    
+
     res.render("cartDetail", {
       titulo: `Carrito ${cid}`,
-      cart
+      cart,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).render("error", { 
-      titulo: "Error", 
-      mensaje: "Error interno del servidor" 
+    res.status(500).render("error", {
+      titulo: "Error",
+      mensaje: "Error interno del servidor",
     });
   }
 });
@@ -212,5 +179,7 @@ httpServer.listen(PORT, () => {
   console.log(`Productos (paginación): http://localhost:${PORT}/products`);
   console.log(`Tiempo real: http://localhost:${PORT}/tiemporeal`);
   console.log(`Ejemplo carrito: http://localhost:${PORT}/carts/[ID_CARRITO]`);
-  console.log(`Socket.io endpoint: http://localhost:${PORT}/socket.io/socket.io.js`);
+  console.log(
+    `Socket.io endpoint: http://localhost:${PORT}/socket.io/socket.io.js`
+  );
 });
