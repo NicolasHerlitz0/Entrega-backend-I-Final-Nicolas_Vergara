@@ -19,8 +19,8 @@ Thumbs.db
 
 # Archivos de migración/respaldo antiguos
 data (referencia migracion)/
-managers/
-controllers/
+src/managers (referencia migracion)/
+src/controllers/
 
 # Archivos ZIP de entrega
 *.zip
@@ -28,3 +28,6 @@ Entrega-backend I Final-Nicolas_Vergara.zip
 
 # Scripts temporales de migración
 migrate-products.js
+
+# Vista alternativa
+src/vistas/productDetail.handlebars
