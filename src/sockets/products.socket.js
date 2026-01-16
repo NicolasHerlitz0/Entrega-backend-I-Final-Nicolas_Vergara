@@ -2,7 +2,6 @@ export default function registerProductSockets(io, productService) {
   io.on("connection", (socket) => {
     console.log("Cliente conectado:", socket.id);
 
-    // Enviar productos al conectar
     socket.on("solicitarProductos", async () => {
       try {
         const productos = await productService.getProducts();
@@ -16,21 +15,22 @@ export default function registerProductSockets(io, productService) {
     // Agregar nuevo producto
     socket.on("agregarProducto", async (productoData) => {
       try {
-        // Convertir tipos (el front envía strings)
         const processedData = {
           ...productoData,
           price: parseFloat(productoData.price),
-          stock: parseInt(productoData.stock)
+          stock: parseInt(productoData.stock),
         };
 
         const nuevoProducto = await productService.addProduct(processedData);
 
         if (nuevoProducto === null) {
-          socket.emit("errorAgregarProducto", "Error: Código duplicado o datos inválidos");
+          socket.emit(
+            "errorAgregarProducto",
+            "Error: Código duplicado o datos inválidos"
+          );
           return;
         }
 
-        // Obtener y enviar lista actualizada
         const productos = await productService.getProducts();
         io.emit("productosActualizados", productos || []);
         console.log("Producto agregado vía websocket:", nuevoProducto);
@@ -43,8 +43,6 @@ export default function registerProductSockets(io, productService) {
     // Eliminar producto
     socket.on("eliminarProducto", async (idProducto) => {
       try {
-        // El front envía número, pero ahora necesitamos ObjectId
-        // Convertimos a string para validación (el front debe adaptarse)
         const productId = String(idProducto);
 
         const productoEliminado = await productService.deleteProduct(productId);
@@ -54,7 +52,7 @@ export default function registerProductSockets(io, productService) {
           return;
         }
 
-        // Obtener y enviar lista actualizada
+        // Lista actualizada
         const productos = await productService.getProducts();
         io.emit("productosActualizados", productos || []);
         console.log("Producto eliminado vía websocket:", productoEliminado);

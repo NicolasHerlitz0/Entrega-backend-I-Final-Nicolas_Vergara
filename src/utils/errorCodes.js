@@ -1,5 +1,3 @@
-
-// src/utils/errorCodes.js
 export const INVALID_ID = "INVALID_ID";
 export const PRODUCT_NOT_FOUND = "PRODUCT_NOT_FOUND";
 export const CART_NOT_FOUND = "CART_NOT_FOUND";

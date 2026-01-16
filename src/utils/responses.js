@@ -1,6 +1,3 @@
-
-// src/utils/responses.js
-
 export function ok(res, data, message) {
   if (message) {
     return res.json({ success: true, message, data });
@@ -11,6 +8,6 @@ export function ok(res, data, message) {
 export function err(res, httpStatus, code, message, details = null) {
   return res.status(httpStatus).json({
     success: false,
-    error: { code, message, details }
+    error: { code, message, details },
   });
 }

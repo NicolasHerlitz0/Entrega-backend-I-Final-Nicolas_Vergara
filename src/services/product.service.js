@@ -1,14 +1,14 @@
-import Product from '../models/product.models.js';
-import { buildLinksSimple } from '../utils/buildLinks.js';
+import Product from "../models/product.models.js";
+import { buildLinksSimple } from "../utils/buildLinks.js";
 
 class ProductService {
-  // Obtener todos los productos (sin paginación, para compatibilidad)
+  // Obtener productos (sin paginación)
   async getProducts() {
     try {
       const products = await Product.find({});
       return products;
     } catch (error) {
-      console.error('Error en getProducts:', error.message);
+      console.error("Error en getProducts:", error.message);
       return null;
     }
   }
@@ -16,15 +16,14 @@ class ProductService {
   // Obtener producto por ID
   async getProductById(id) {
     try {
-      // Validar que el ID tenga formato de ObjectId (simple)
       if (id.length !== 24) {
         return null;
       }
-      
+
       const product = await Product.findById(id);
       return product;
     } catch (error) {
-      console.error('Error en getProductById:', error.message);
+      console.error("Error en getProductById:", error.message);
       return null;
     }
   }
@@ -32,17 +31,16 @@ class ProductService {
   // Crear nuevo producto
   async addProduct(productData) {
     try {
-      // Verificar si el código ya existe
       const existingProduct = await Product.findOne({ code: productData.code });
       if (existingProduct) {
-        return null; // Código duplicado
+        return null;
       }
 
       const newProduct = new Product(productData);
       await newProduct.save();
       return newProduct;
     } catch (error) {
-      console.error('Error en addProduct:', error.message);
+      console.error("Error en addProduct:", error.message);
       return null;
     }
   }
@@ -50,30 +48,36 @@ class ProductService {
   // Actualizar producto
   async updateProduct(id, updatedFields) {
     try {
-      // Validar que el ID tenga formato de ObjectId (simple)
       if (id.length !== 24) {
         return null;
       }
 
-      // Filtrar campos no permitidos
-      const allowedFields = ['title', 'description', 'price', 'code', 'stock', 'category', 'status'];
+      const allowedFields = [
+        "title",
+        "description",
+        "price",
+        "code",
+        "stock",
+        "category",
+        "status",
+      ];
       const filteredFields = {};
-      
-      Object.keys(updatedFields).forEach(key => {
+
+      Object.keys(updatedFields).forEach((key) => {
         if (allowedFields.includes(key)) {
           filteredFields[key] = updatedFields[key];
         }
       });
 
-      // Verificar si el nuevo código ya existe en otro producto
+      // Verificar nuevo código
       if (filteredFields.code) {
-        const existingWithCode = await Product.findOne({ 
-          code: filteredFields.code, 
-          _id: { $ne: id } 
+        const existingWithCode = await Product.findOne({
+          code: filteredFields.code,
+          _id: { $ne: id },
         });
-        
+
         if (existingWithCode) {
-          return null; // Código duplicado en otro producto
+          return null;
         }
       }
 
@@ -85,7 +89,7 @@ class ProductService {
 
       return updatedProduct;
     } catch (error) {
-      console.error('Error en updateProduct:', error.message);
+      console.error("Error en updateProduct:", error.message);
       return null;
     }
   }
@@ -93,7 +97,6 @@ class ProductService {
   // Eliminar producto
   async deleteProduct(id) {
     try {
-      // Validar que el ID tenga formato de ObjectId (simple)
       if (id.length !== 24) {
         return null;
       }
@@ -101,50 +104,40 @@ class ProductService {
       const deletedProduct = await Product.findByIdAndDelete(id);
       return deletedProduct;
     } catch (error) {
-      console.error('Error en deleteProduct:', error.message);
+      console.error("Error en deleteProduct:", error.message);
       return null;
     }
   }
 
-  // Obtener productos paginados con filtros (NUEVO - consigna 3)
+  // Obtener productos paginados con filtros
   async getPaginatedProducts(options = {}) {
     try {
-      const {
-        limit = 10,
-        page = 1,
-        query = {},
-        sort = null
-      } = options;
+      const { limit = 10, page = 1, query = {}, sort = null } = options;
 
-      // Construir filtro de búsqueda
       const filter = {};
-      
+
       if (query.category) {
         filter.category = query.category;
       }
-      
+
       if (query.status !== undefined) {
-        filter.status = query.status === 'true' || query.status === true;
+        filter.status = query.status === "true" || query.status === true;
       }
 
-      // Construir opciones de ordenamiento
       let sortOptions = {};
-      if (sort === 'asc') {
+      if (sort === "asc") {
         sortOptions.price = 1;
-      } else if (sort === 'desc') {
+      } else if (sort === "desc") {
         sortOptions.price = -1;
       }
 
       // Calcular paginación
       const skip = (page - 1) * limit;
 
-      // Ejecutar consulta
+      // Consulta
       const [products, totalProducts] = await Promise.all([
-        Product.find(filter)
-          .sort(sortOptions)
-          .skip(skip)
-          .limit(limit),
-        Product.countDocuments(filter)
+        Product.find(filter).sort(sortOptions).skip(skip).limit(limit),
+        Product.countDocuments(filter),
       ]);
 
       const totalPages = Math.ceil(totalProducts / limit);
@@ -153,14 +146,14 @@ class ProductService {
 
       // Generar links de paginación
       const { prevLink, nextLink } = buildLinksSimple(
-        '/api/products',
+        "/api/products",
         page,
         totalPages,
         { limit, sort, query }
       );
 
       return {
-        status: 'success',
+        status: "success",
         payload: products,
         totalPages,
         prevPage: hasPrevPage ? page - 1 : null,
@@ -169,10 +162,10 @@ class ProductService {
         hasPrevPage,
         hasNextPage,
         prevLink,
-        nextLink
+        nextLink,
       };
     } catch (error) {
-      console.error('Error en getPaginatedProducts:', error.message);
+      console.error("Error en getPaginatedProducts:", error.message);
       return null;
     }
   }
